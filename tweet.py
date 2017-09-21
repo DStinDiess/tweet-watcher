@@ -1,55 +1,33 @@
-import twitter, requests, time, json 
+import tweepy
 
-twitter_consumer_key = '__'
-twitter_consumer_secret = '__'
-twitter_access_token = '__'
-twitter_access_secret = '__'
+consumer_key = '__'
+consumer_secret = '__'
+access_token = '__'
+access_token_secret = '__'
 
-twitter_api = twitter.Api(consumer_key=twitter_consumer_key, consumer_secret=twitter_consumer_secret, access_token_key=twitter_access_token, access_token_secret=twitter_access_secret)
+accounts = ['DanielStinDiess', 'ImAcrimonious', ]
+topics = ['python', ] 
 
-handle = '@DanielStinDiess'
 
-def formatTime(val):
-	weekdays = ['Mon ', 'Tue ', 'Wed ', 'Thu ', 'Fri ', 'Sat ', 'Sun ']
-	months = ['Jan ', 'Feb ', 'Mar ', 'Apr ', 'May ', 'Jun ', 'Jul ', 'Aug ', 'Sep ', 'Oct ', 'Nov ', 'Dec ']
-	UTC_time = ""
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
 
-	UTC_time += weekdays[val.tm_wday] + months[val.tm_mon - 1]
+api = tweepy.API(auth)
 
-	# Right Align Days
-	UTC_time += rightAlign(val.tm_mday) + ' '
+class MyStreamListener(tweepy.StreamListener):
 
-	# Right Align Hours
-	UTC_time += rightAlign(val.tm_hour) + ':'
+	def on_status(self, status):
+		if status.user.screen_name in accounts:
+			print(status.text)
+			# Flash the lights
 
-	# Right Align Mins
-	UTC_time += rightAlign(val.tm_min) + ':'
+	def on_error(self, status_code):
+		if status_code == 420:
+			# Returning False in on_data disconnects the stream
+			return False
 
-	# Right Align Secs
-	UTC_time += rightAlign(val.tm_sec) + ' '
-	
-	# Format with year
-	UTC_time += '+0000 ' + str(val.tm_year)
+myStreamListener = MyStreamListener()
+myStream = tweepy.Stream(auth = api.auth, listener = myStreamListener)
 
-	return UTC_time
 
-def rightAlign(number):
-	string = "";
-
-	if number < 10:
-		string += '0' + str(number)
-	else:
-		string += str(number)
-
-	return string
-
-while True:
-	statuses = twitter_api.GetUserTimeline(screen_name=handle, count=10, include_rts=True)
-
-	UTC_time = formatTime(time.gmtime())
-
-	for status in statuses:
-		if UTC_time == status.created_at:
-			print("LIVE")
-		else:
-			print("----")
+myStream.filter(track = topics, async = True)
